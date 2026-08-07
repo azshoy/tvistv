@@ -1,3 +1,8 @@
+@font-face {
+  font-family: "Roboto";
+  src: url("Roboto-Regular.ttf") format("truetype");
+}
+
 #main {
   display: flex;
   height: 1050px;
@@ -12,6 +17,25 @@ body, html {
   margin: 0;
   color: white;
   font-size: 30px;
+  height: 100vh;
+  width: 100vw;
+  font-family: "Roboto";
+}
+
+#refresh1, #refresh2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: opacity 2s;
+  &.behind{
+    z-index: -10;
+  }
+  &.invisible{
+    opacity: 0;
+  }
+  &.front{
+    z-index: 10;
+  }
 }
 
 .col {
@@ -32,7 +56,7 @@ body, html {
 #pertti {
   display: flex;
   flex-direction: row;
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   gap: 0.5em;
   background-color: #1b1b1b;
   padding: 0.5em;
@@ -47,22 +71,40 @@ body, html {
   font-size: 30px;
 }
 #month {
-  height: 260px;
+  height: 280px;
   overflow: hidden;
+  width: 500px;
 
   & iframe {
     margin-top: -40px;
+    margin-left: -10px;
   }
 }
 #logo{
+  cursor: none;
   width: 100%;
   & img {
     width: 100%;
   }
 }
-#schedule {
-  height: 750px;
+#week {
+  height: 680px;
+  width: 500px;
   overflow: hidden;
+  & iframe {
+    margin-top: -20px;
+    margin-left: -10px;
+  }
+}
+#events {
+  height: 160px;
+  width: 500px;
+  overflow: hidden;
+  & iframe {
+    margin-top: -60px;
+    margin-left: -10px;
+  }
+
 }
 #info {
   font-size: 1rem;
