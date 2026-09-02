@@ -1,0 +1,79 @@
+import { panels } from "./panels.js"
+import { readJson, putFile } from "./github.js"
+
+const STATE_PATH = "data/state.json"
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024
+
+const SUBCOMMAND = 1
+const STRING = 3
+const ATTACHMENT = 11
+
+const types = {
+  text: {
+    option: { name: "value", description: "Text to show", type: STRING, required: true },
+    resolve: ({ value }) => value,
+  },
+  date: {
+    option: { name: "date", description: "YYYY-MM-DD, defaults to today", type: STRING, required: false },
+    resolve: ({ date }) => {
+      const value = date || new Date().toISOString().slice(0, 10)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error(`"${value}" is not a YYYY-MM-DD date.`)
+      return value
+    },
+  },
+  image: {
+    option: { name: "file", description: "Image to show", type: ATTACHMENT, required: true },
+    resolve: ({ file }) => storeImage(file),
+  },
+}
+
+export const options = [
+  ...panels.map((panel) => ({
+    name: panel.id,
+    description: panel.description,
+    type: SUBCOMMAND,
+    options: [types[panel.type].option],
+  })),
+  { name: "show", description: "Show what the TV is displaying right now", type: SUBCOMMAND },
+]
+
+export async function run(data, user) {
+  const [command] = data.options
+  const state = await readJson(STATE_PATH)
+
+  if (command.name === "show") {
+    return panels.map((panel) => `**${panel.id}** — \`${state[panel.id]}\``).join("\n")
+  }
+
+  const panel = panels.find((candidate) => candidate.id === command.name)
+  const value = await types[panel.type].resolve(argumentsOf(command, data.resolved))
+
+  state[panel.id] = value
+  await putFile(STATE_PATH, JSON.stringify(state, null, 2) + "\n", `${panel.id}: ${value} (${user})`)
+
+  return `**${panel.id}** is now \`${value}\`. It reaches the TV within a couple of minutes.`
+}
+
+function argumentsOf(command, resolved) {
+  const args = {}
+  for (const option of command.options || []) {
+    args[option.name] = option.type === ATTACHMENT ? resolved.attachments[option.value] : option.value
+  }
+  return args
+}
+
+async function storeImage(attachment) {
+  if (!attachment.content_type?.startsWith("image/")) throw new Error("That file is not an image.")
+  if (attachment.size > MAX_IMAGE_BYTES) throw new Error("That image is over 8 MB.")
+
+  const response = await fetch(attachment.url)
+  if (!response.ok) throw new Error("Could not download that image from Discord.")
+
+  const path = `img/wall/${Date.now()}-${slug(attachment.filename)}`
+  await putFile(path, Buffer.from(await response.arrayBuffer()), `image: ${path}`)
+  return path
+}
+
+function slug(filename) {
+  return filename.toLowerCase().replace(/[^a-z0-9.]+/g, "-")
+}

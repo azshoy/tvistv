@@ -19,7 +19,7 @@
   <div id="pertti">
     <div style="font-size: 2.8rem">⚠️</div>
     <div>
-      <span id="perttiStuckValue">X</span> days since last
+      <span data-panel="pertti" data-format="days-since">X</span> days since last
       <br/>
       Pertti stuck accident.
     </div>
@@ -27,10 +27,10 @@
   <div id="info">
     <b>Potentially relevant information:</b>
     <br/>
-    Go job.
+    <span data-panel="info">Go job.</span>
   </div>
   <div id="img">
-    <img src="img/xdd.png" alt="xdd">
+    <img data-panel="image" src="img/xdd.png" alt="xdd">
   </div>
   </div>
   <div class="col end">
@@ -49,7 +49,7 @@
   </div>
 
 </div>
-<script src="script/pertti.js"></script>
+<script src="script/render.js"></script>
 <script src="script/today.js"></script>
 
 </body>
