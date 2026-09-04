@@ -1,7 +1,6 @@
 import { panels } from "./panels.js"
-import { readJson, putFile } from "./github.js"
+import { readState, writeState, storeImage } from "./state.js"
 
-const STATE_PATH = "data/state.json"
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
 const SUBCOMMAND = 1
@@ -23,7 +22,7 @@ const types = {
   },
   image: {
     option: { name: "file", description: "Image to show", type: ATTACHMENT, required: true },
-    resolve: ({ file }) => storeImage(file),
+    resolve: ({ file }) => uploadImage(file),
   },
 }
 
@@ -37,21 +36,19 @@ export const options = [
   { name: "show", description: "Show what the TV is displaying right now", type: SUBCOMMAND },
 ]
 
-export async function run(data, user) {
+export async function run(data) {
   const [command] = data.options
-  const state = await readJson(STATE_PATH)
 
   if (command.name === "show") {
+    const state = await readState()
     return panels.map((panel) => `**${panel.id}** — \`${state[panel.id]}\``).join("\n")
   }
 
   const panel = panels.find((candidate) => candidate.id === command.name)
   const value = await types[panel.type].resolve(argumentsOf(command, data.resolved))
+  await writeState(panel.id, value)
 
-  state[panel.id] = value
-  await putFile(STATE_PATH, JSON.stringify(state, null, 2) + "\n", `${panel.id}: ${value} (${user})`)
-
-  return `**${panel.id}** is now \`${value}\`. It reaches the TV within a couple of minutes.`
+  return `**${panel.id}** is now \`${value}\`.`
 }
 
 function argumentsOf(command, resolved) {
@@ -62,16 +59,15 @@ function argumentsOf(command, resolved) {
   return args
 }
 
-async function storeImage(attachment) {
+async function uploadImage(attachment) {
   if (!attachment.content_type?.startsWith("image/")) throw new Error("That file is not an image.")
   if (attachment.size > MAX_IMAGE_BYTES) throw new Error("That image is over 8 MB.")
 
   const response = await fetch(attachment.url)
   if (!response.ok) throw new Error("Could not download that image from Discord.")
 
-  const path = `img/wall/${Date.now()}-${slug(attachment.filename)}`
-  await putFile(path, Buffer.from(await response.arrayBuffer()), `image: ${path}`)
-  return path
+  const body = Buffer.from(await response.arrayBuffer())
+  return storeImage(slug(attachment.filename), attachment.content_type, body)
 }
 
 function slug(filename) {

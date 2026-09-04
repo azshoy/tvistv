@@ -4,12 +4,13 @@ Discord slash commands that update what the office TV shows.
 
 `/tv info <text>`, `/tv pertti [date]`, `/tv image <file>`, `/tv show`.
 
-Each command commits `data/state.json` (and uploaded images) to this repo. GitHub Pages
-rebuilds, and the TV picks it up on its next refresh — a couple of minutes end to end.
+State lives in a Firebase Realtime Database. The bot writes a single key per command; the TV
+reads the database directly and streams changes, so an edit is on screen in about a second.
+Uploaded images go to a public Cloud Storage bucket.
 
-The bot answers Discord over HTTP instead of holding a gateway connection, so it can sleep
-between commands. It is a plain Node server with no dependencies: run it on Cloud Run, a
-droplet, or anything else that can expose an HTTPS URL.
+The bot answers Discord over HTTP instead of holding a gateway connection, so it sleeps
+between commands. Nothing polls it — the TV talks to the database, not to this service — so it
+genuinely scales to zero.
 
 ## Setup
 
@@ -25,41 +26,84 @@ At <https://discord.com/developers/applications> → **New Application**.
 In Discord, enable *Settings → Advanced → Developer Mode*, then right-click the server for
 *Copy Server ID*, and the channel for *Copy Channel ID* if you want to lock the bot to one.
 
-### 2. GitHub token
+### 2. Database
 
-A fine-grained token at <https://github.com/settings/personal-access-tokens> with access to
-`azshoy/tvistv` only and **Contents: Read and write**. Nothing else.
+Add Firebase to your GCP project at <https://console.firebase.google.com>, then *Build →
+Realtime Database → Create Database*. Pick **europe-west1** — the Realtime Database only runs
+in `us-central1`, `europe-west1` and `asia-southeast1`, so this is not the same list of regions
+Cloud Run offers.
 
-### 3. Deploy
+Rules — the TV reads without credentials, and only the bot's service account writes (a service
+account bypasses these):
+
+```json
+{
+  "rules": {
+    ".read": true,
+    ".write": false
+  }
+}
+```
+
+Seed it once with *⋮ → Import JSON* at the root, using [`data/seed.json`](../data/seed.json).
+
+Put the database URL in `script/render.js` as well — it is public by design.
+
+### 3. Image bucket
+
+```sh
+gcloud storage buckets create gs://tvistv-wall \
+  --location=europe-north1 --uniform-bucket-level-access
+gcloud storage buckets add-iam-policy-binding gs://tvistv-wall \
+  --member=allUsers --role=roles/storage.objectViewer
+```
+
+Public read, because the TV loads the images straight from it.
+
+### 4. Service account
+
+```sh
+PROJECT=$(gcloud config get-value project)
+gcloud iam service-accounts create tvistv-bot
+
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member=serviceAccount:tvistv-bot@$PROJECT.iam.gserviceaccount.com \
+  --role=roles/firebasedatabase.admin
+gcloud storage buckets add-iam-policy-binding gs://tvistv-wall \
+  --member=serviceAccount:tvistv-bot@$PROJECT.iam.gserviceaccount.com \
+  --role=roles/storage.objectAdmin
+```
+
+No key file anywhere: on Cloud Run the bot picks the credentials up from the metadata server.
+
+### 5. Deploy
 
 ```sh
 gcloud run deploy tvistv-bot \
   --source bot \
   --region europe-north1 \
+  --service-account tvistv-bot@$PROJECT.iam.gserviceaccount.com \
   --allow-unauthenticated \
   --no-cpu-throttling \
-  --set-env-vars "DISCORD_APP_ID=...,DISCORD_PUBLIC_KEY=...,GITHUB_REPO=azshoy/tvistv,GITHUB_BRANCH=master" \
-  --set-env-vars "GITHUB_TOKEN=..."
+  --set-env-vars "DISCORD_APP_ID=...,DISCORD_PUBLIC_KEY=...,RTDB_URL=https://tvistv-default-rtdb.europe-west1.firebasedatabase.app,IMAGE_BUCKET=tvistv-wall"
 ```
 
 `--allow-unauthenticated` is required because Discord calls the URL; the Ed25519 signature
 check in `discord.js` rejects anything that is not Discord. `--no-cpu-throttling` matters
-because the bot keeps working after acknowledging the interaction. It still scales to zero.
+because the bot keeps working after acknowledging the interaction, and Cloud Run would
+otherwise freeze it mid-write.
 
-Put `GITHUB_TOKEN` in Secret Manager and use `--set-secrets` instead if you would rather not
-have it in the service config.
-
-### 4. Point Discord at it
+### 6. Point Discord at it
 
 Paste the Cloud Run URL into **General Information → Interactions Endpoint URL** and save.
 Discord sends a signed PING and refuses the URL if the reply is wrong, so a successful save
 means the deployment works.
 
-### 5. Register the commands
+### 7. Register the commands
 
 ```sh
 cp bot/.env.example bot/.env   # fill it in
-cd bot && npm run register
+cd bot && npm install && npm run register
 ```
 
 Guild-scoped, so they appear immediately. Re-run after changing `panels.js`.
@@ -69,16 +113,16 @@ per role. Cheaper than doing it in code, and easier to change.
 
 ## Adding a panel
 
-1. Add a key to `data/state.json`.
-2. Add `data-panel="<key>"` to the element in `view.html` — an `<img>` gets its `src` set,
+1. Add `data-panel="<key>"` to the element in `view.html` — an `<img>` gets its `src` set,
    anything else gets its text. `data-format="days-since"` renders a date as a day count.
-3. Add an entry to `bot/panels.js` and re-run `npm run register`.
+2. Add an entry to `bot/panels.js` and re-run `npm run register`.
 
-Nothing else knows about the panels, so those three steps are the whole change.
+The database picks up the new key on first write, so there is no schema to migrate.
 
 ## Running locally
 
 ```sh
+gcloud auth application-default login   # once
 cd bot && npm run dev
 ```
 

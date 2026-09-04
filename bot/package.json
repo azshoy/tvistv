@@ -9,5 +9,8 @@
     "start": "node server.js",
     "dev": "node --env-file=.env server.js",
     "register": "node --env-file=.env register.js"
+  },
+  "dependencies": {
+    "google-auth-library": "^11.0.2"
   }
 }

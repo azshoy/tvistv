@@ -28,12 +28,11 @@ createServer(async (request, response) => {
 }).listen(process.env.PORT || 8080)
 
 async function handle(interaction) {
-  const user = interaction.member?.user?.username ?? "someone"
   try {
     if (allowedChannel && interaction.channel_id !== allowedChannel) {
       throw new Error("I only take orders in my own channel.")
     }
-    await reply(interaction.token, await run(interaction.data, user))
+    await reply(interaction.token, await run(interaction.data))
   } catch (error) {
     await reply(interaction.token, `⚠️ ${error.message}`)
   }
