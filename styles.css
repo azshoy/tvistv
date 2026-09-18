@@ -114,12 +114,26 @@ body, html {
   border-radius: 0.2em;
 }
 
-#lunch {
+#bboardwrap {
   font-size: 1rem;
   background-color: #2c2926;
   padding: 0.5em;
   flex-grow: 1;
   border-radius: 0.2em;
+  &>.header{
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+}
+#bboard{
+  display: flex;
+  flex-direction: column;
+  &>div {
+    .header{
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+  }
 }
 #img {
   font-size: 1rem;
@@ -127,7 +141,10 @@ body, html {
   margin: 0.6em 0.1em 0.5em 0.1em;
   transform: rotate(-3deg);
   background-color: #fbfbfb;
+  max-height: 350px;
   & img {
     width: 100%;
+    object-fit: contain;
+    max-height: 100%;
   }
 }
