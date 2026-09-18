@@ -157,9 +157,10 @@ body, html {
     overflow: hidden;
   }
   & iframe {
-    width: calc(100% + 40px);
+    width: calc(100% + 60px);
     height: 430px;
     margin-top: -40px;
+    margin-left: -20px;
     border-color: transparent;
   }
 }
