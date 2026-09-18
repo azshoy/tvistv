@@ -1,5 +1,5 @@
 
-const api_url = "http://0.0.0.0:5000";
+const api_url = "https://xn--timisto-90a.fi/api";
 
 async function APIget(path) {
   const response = await fetch(api_url + path, {
