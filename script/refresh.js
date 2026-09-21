@@ -1,5 +1,5 @@
 const fullRefreshIntervalHours = 24
-const hiddenRefreshIntervalMinutes = 1
+const hiddenRefreshIntervalMinutes = 5
 
 let current = 1
 
@@ -16,7 +16,7 @@ function hiddenReload() {
   document.getElementById(next).classList.add('behind');
   document.getElementById(next).classList.add('invisible');
   document.getElementById(next).src = document.getElementById(next).src
-  setTimeout(hiddenReloadShow, 1000 * 2)
+  setTimeout(hiddenReloadShow, 1000 * 5)
 }
 function hiddenReloadShow() {
   let next = getNextId()
