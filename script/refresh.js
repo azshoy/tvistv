@@ -1,5 +1,5 @@
 const fullRefreshIntervalHours = 24
-const hiddenRefreshIntervalMinutes = 5
+const hiddenRefreshIntervalMinutes = 2
 
 let current = 1
 
