@@ -2,7 +2,10 @@
   font-family: "Roboto";
   src: url("Roboto-Regular.ttf") format("truetype");
 }
-
+@font-face {
+  font-family: "RobotoMono";
+  src: url("RobotoMono.ttf") format("truetype");
+}
 #main {
   display: flex;
   height: 1050px;
@@ -134,9 +137,33 @@ h1, h2, h3 {
     margin-block-start: 0.1em;
     margin-block-end: 0.1em;
 }
+ul {
+    margin-block-start: 0.2em;
+    margin-block-end: 0.2em;
+}
+.underline {
+  text-decoration: underline;
+}
+.code_block {
+  background-color: black;
+  border: 1px solid grey;
+  color: #bfffbf;
+  font-family: RobotoMono;
+  width: 100%;
+}
+.spoiler {
+  opacity: 0.2;
+}
+.code{
+  background-color: black;
+  color: #bfffbf;
+  font-family: RobotoMono;
+
+}
 #bboard{
   display: flex;
   flex-direction: column;
+  font-size: 0.9em;
   &>div {
     .header{
       font-size: 1.2rem;
