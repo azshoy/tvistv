@@ -130,6 +130,10 @@ body, html {
     padding-bottom: 0.3rem;
   }
 }
+h1, h2, h3 {
+    margin-block-start: 0.1em;
+    margin-block-end: 0.1em;
+}
 #bboard{
   display: flex;
   flex-direction: column;

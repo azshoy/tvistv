@@ -45,9 +45,9 @@ function format_markdown(txt){
       md += "<ul class='li" + list.toString() + "'><li>" + result + "</li></ul>"
     } else {
       md += result
-    }
-    if (i < lines.length - 1){
-      md += "<br/>"
+      if (i < lines.length - 1){
+        md += "<br/>"
+      }
     }
   }
   if (cf.includes("code_block")) {
