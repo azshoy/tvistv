@@ -11,9 +11,19 @@ async function get_box_contents() {
           if (cont.header !== ""){
             header = "<div class='header'>" + cont.header + "</div>"
           }
+          let author = ""
+          if ((cont.created_by || cont.created_by !== "") && !(cont.text.startsWith("§"))) {
+            author = "<div class='author'>~ " + cont.created_by + "</div>"
+            if (cont.modified_by && cont.modified_by != "nobody" && cont.modified_by != cont.created_by){
+              author = "<div class='author'>~ " + cont.modified_by + "</div>"
+            }
+          }
+          if (cont.text.startsWith("§")){
+            cont.text = cont.text.replace("§", "")
+          }
           content.push({
             order: cont.order,
-            elem: "<div class='" + cont.css_class + "'>" + header +  format_markdown(cont.text) + "</div>"
+            elem: "<div class='" + cont.css_class + "'>" + header +  format_markdown(cont.text) + author + "</div>"
           })
         }
       }
@@ -30,9 +40,9 @@ function format_markdown(txt){
   var md = ""
   var lines = txt.split("\n")
   var cf = []
-  console.log(lines)
   for (var i =0; i < lines.length; i++){
     var {line, header, quote, list} = get_line_format(lines[i])
+    line = format_mentions(line)
     var {result, current_format} = get_format_chars(line, cf)
     cf = current_format
     if (header > 0){
@@ -55,6 +65,42 @@ function format_markdown(txt){
   }
   console.log(md)
   return md
+}
+
+function format_mentions(line){
+  var words = line.split(" ")
+  for (let i = 0; i < words.length; i++){
+    var w = words[i]
+    var end = ""
+    if (w.startsWith("@")){
+      var {res, txt} = has_format_characters(w)
+      if (res === false){
+        if (txt.length !== w.length){
+          end = w.slice(txt.length)
+          w = txt
+        }
+        words[i] = "<span class='mention'>"+w+"</span>"+end
+      }
+    }
+  }
+  return words.join(" ")
+}
+function has_format_characters(s){
+  var specials = ["```", "`", "**", "__", "_", "*", "||"]
+  var found = false
+  for (var c = 0; c < specials.length; c++){
+    if (s.includes(specials[c])) {
+      if (s.endsWith(specials[c])){
+        var no_end = s.slice(0, -specials[c].length)
+        if (!(no_end.includes(specials[c]))){
+          return has_format_characters(no_end)
+        }
+      }
+      found = true
+    }
+  }
+  return {res: found, txt: s}
+
 }
 function get_line_format(line){
   var header = 0

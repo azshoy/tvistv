@@ -171,6 +171,17 @@ ul {
     }
     padding-bottom: 0.5rem;
   }
+  .author{
+    font-size: 0.7em;
+    color: #a1a1a1;
+    line-height: 1;
+    text-align: right;
+    margin-top: -0.2em;
+    margin-bottom: -0.1em;
+  }
+  .mention{
+    color: #8be0ec;
+  }
 }
 #img {
   font-size: 1rem;
